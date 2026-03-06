@@ -44,3 +44,18 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+
+  proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bufbuild/buf-setup-action@v1
+
+      - name: Lint protos
+        run: buf lint
+        working-directory: api/proto
+
+      - name: Generate protos
+        run: buf generate
+        working-directory: api/proto

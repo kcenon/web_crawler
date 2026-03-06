@@ -1,0 +1,208 @@
+syntax = "proto3";
+
+package crawler.v1;
+
+option go_package = "github.com/kcenon/web_crawler/pkg/server/pb;crawlerv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// ErrorCode enumerates well-known error categories returned by the crawler.
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_NETWORK = 1;
+  ERROR_CODE_TIMEOUT = 2;
+  ERROR_CODE_RATE_LIMITED = 3;
+  ERROR_CODE_BLOCKED = 4;
+  ERROR_CODE_PARSE_FAILED = 5;
+  ERROR_CODE_INVALID_URL = 6;
+  ERROR_CODE_INTERNAL = 7;
+}
+
+// ExtractionType identifies the strategy used to extract data from a page.
+enum ExtractionType {
+  EXTRACTION_TYPE_UNSPECIFIED = 0;
+  EXTRACTION_TYPE_CSS = 1;
+  EXTRACTION_TYPE_XPATH = 2;
+  EXTRACTION_TYPE_REGEX = 3;
+  EXTRACTION_TYPE_JSON_PATH = 4;
+}
+
+// CrawlerStatus represents the lifecycle state of a crawler instance.
+enum CrawlerStatus {
+  CRAWLER_STATUS_UNSPECIFIED = 0;
+  CRAWLER_STATUS_IDLE = 1;
+  CRAWLER_STATUS_RUNNING = 2;
+  CRAWLER_STATUS_PAUSED = 3;
+  CRAWLER_STATUS_STOPPED = 4;
+}
+
+// CrawlOptions holds per-request crawl parameters.
+message CrawlOptions {
+  // Maximum depth to follow links from the seed URL.
+  int32 max_depth = 1;
+  // Maximum number of pages to crawl in a single request.
+  int32 max_pages = 2;
+  // Delay between consecutive requests to the same host.
+  google.protobuf.Duration request_delay = 3;
+  // Overall deadline for the crawl operation.
+  google.protobuf.Duration timeout = 4;
+  // Respect robots.txt directives when true.
+  bool respect_robots_txt = 5;
+  // HTTP headers to include in every request.
+  map<string, string> headers = 6;
+}
+
+// ExtractionRule defines how to extract a named field from page content.
+message ExtractionRule {
+  // Human-readable name for the extracted field.
+  string name = 1;
+  // Strategy used for extraction (CSS, XPath, etc.).
+  ExtractionType type = 2;
+  // Selector or pattern string interpreted according to type.
+  string pattern = 3;
+  // If true, return all matches instead of only the first.
+  bool multiple = 4;
+}
+
+// ExtractionResult holds the output of a single extraction rule.
+message ExtractionResult {
+  // Name matching the ExtractionRule that produced this result.
+  string name = 1;
+  // Extracted values (one or more depending on the rule).
+  repeated string values = 2;
+}
+
+// CrawlConfig describes the full configuration for a crawl job.
+message CrawlConfig {
+  // Seed URLs to start crawling from.
+  repeated string urls = 1;
+  // Crawl behaviour parameters.
+  CrawlOptions options = 2;
+  // Extraction rules applied to each crawled page.
+  repeated ExtractionRule extraction_rules = 3;
+  // Middleware pipeline configuration.
+  repeated MiddlewareConfig middlewares = 4;
+}
+
+// MiddlewareConfig configures a single middleware in the processing pipeline.
+message MiddlewareConfig {
+  // Identifier of the middleware (e.g. "retry", "proxy", "cache").
+  string name = 1;
+  // Middleware-specific settings encoded as key-value pairs.
+  map<string, string> settings = 2;
+  // Lower-priority values execute first.
+  int32 priority = 3;
+}
+
+// ErrorInfo provides structured error details attached to a crawl result.
+message ErrorInfo {
+  // Machine-readable error category.
+  ErrorCode code = 1;
+  // Human-readable error description.
+  string message = 2;
+  // URL that triggered the error, if applicable.
+  string url = 3;
+  // Whether the caller may retry the failed operation.
+  bool retryable = 4;
+}
+
+// CrawlRequest is sent by the client to initiate a crawl operation.
+message CrawlRequest {
+  // Target URLs to crawl.
+  repeated string urls = 1;
+  // Full crawl configuration.
+  CrawlConfig config = 2;
+}
+
+// CrawlResponse is returned for each crawled page.
+message CrawlResponse {
+  // The URL that was crawled.
+  string url = 1;
+  // HTTP status code returned by the target.
+  int32 status_code = 2;
+  // Raw page content (HTML or other).
+  string content = 3;
+  // Extraction results keyed by rule name.
+  repeated ExtractionResult extractions = 4;
+  // Non-nil when the page could not be crawled successfully.
+  ErrorInfo error = 5;
+  // Time when the page was fetched.
+  google.protobuf.Timestamp crawled_at = 6;
+  // Wall-clock time spent fetching this page.
+  google.protobuf.Duration duration = 7;
+}
+
+// CrawlStats reports runtime statistics for a crawler instance.
+message CrawlStats {
+  // Total pages crawled since the crawler started.
+  int64 pages_crawled = 1;
+  // Total pages that failed.
+  int64 pages_failed = 2;
+  // Total pages remaining in the queue.
+  int64 pages_queued = 3;
+  // Average page-fetch latency.
+  google.protobuf.Duration avg_latency = 4;
+  // When the crawler was started.
+  google.protobuf.Timestamp started_at = 5;
+  // Current lifecycle status.
+  CrawlerStatus status = 6;
+}
+
+// StartCrawlerRequest carries the configuration to launch a new crawler.
+message StartCrawlerRequest {
+  // Configuration for the crawler to start.
+  CrawlConfig config = 1;
+  // Optional human-readable name for the crawler instance.
+  string crawler_id = 2;
+}
+
+// StartCrawlerResponse confirms the crawler was started.
+message StartCrawlerResponse {
+  // Server-assigned identifier for the running crawler.
+  string crawler_id = 1;
+  // Current status after start.
+  CrawlerStatus status = 2;
+}
+
+// StopCrawlerRequest identifies the crawler to stop.
+message StopCrawlerRequest {
+  // Identifier of the crawler to stop.
+  string crawler_id = 1;
+}
+
+// StopCrawlerResponse confirms the crawler was stopped.
+message StopCrawlerResponse {
+  // Identifier of the stopped crawler.
+  string crawler_id = 1;
+  // Status after stop (should be STOPPED).
+  CrawlerStatus status = 2;
+  // Final statistics snapshot.
+  CrawlStats final_stats = 3;
+}
+
+// GetStatsRequest identifies the crawler to query.
+message GetStatsRequest {
+  // Identifier of the target crawler.
+  string crawler_id = 1;
+}
+
+// GetStatsResponse returns runtime statistics.
+message GetStatsResponse {
+  // Current statistics for the requested crawler.
+  CrawlStats stats = 1;
+}
+
+// AddURLsRequest injects additional URLs into a running crawler.
+message AddURLsRequest {
+  // Identifier of the running crawler.
+  string crawler_id = 1;
+  // URLs to add to the crawl frontier.
+  repeated string urls = 2;
+}
+
+// AddURLsResponse confirms URLs were accepted.
+message AddURLsResponse {
+  // Number of URLs that were actually added (duplicates excluded).
+  int32 added_count = 1;
+}

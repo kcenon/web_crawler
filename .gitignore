@@ -69,8 +69,8 @@ temp/
 *.tmp
 
 # Generated files
-api/proto/**/*.pb.go
-python/crawler/*_pb2*.py
+pkg/server/pb/
+python/crawler/pb/
 
 # Data files
 data/

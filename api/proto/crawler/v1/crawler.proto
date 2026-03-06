@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package crawler.v1;
+
+option go_package = "github.com/kcenon/web_crawler/pkg/server/pb;crawlerv1";
+
+import "crawler/v1/types.proto";
+
+// CrawlerService provides the gRPC API for web crawling operations.
+service CrawlerService {
+  // Crawl fetches one or more URLs and returns results in a single response.
+  rpc Crawl(CrawlRequest) returns (CrawlResponse);
+
+  // CrawlStream opens a bidirectional stream for continuous crawling.
+  // The client sends URLs incrementally and receives results as they complete.
+  rpc CrawlStream(stream CrawlRequest) returns (stream CrawlResponse);
+
+  // StartCrawler launches a long-running crawler with the given configuration.
+  rpc StartCrawler(StartCrawlerRequest) returns (StartCrawlerResponse);
+
+  // StopCrawler gracefully shuts down a running crawler and returns final stats.
+  rpc StopCrawler(StopCrawlerRequest) returns (StopCrawlerResponse);
+
+  // GetStats returns runtime statistics for a running crawler.
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+
+  // AddURLs injects additional URLs into a running crawler's frontier.
+  rpc AddURLs(AddURLsRequest) returns (AddURLsResponse);
+}

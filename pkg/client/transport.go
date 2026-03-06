@@ -45,6 +45,9 @@ type TransportConfig struct {
 	// DisableCompression, if true, prevents requesting gzip/deflate
 	// encoding. Compression is enabled by default.
 	DisableCompression bool
+
+	// Proxy configures an optional proxy server for all requests.
+	Proxy ProxyConfig
 }
 
 func (c TransportConfig) withDefaults() TransportConfig {
@@ -70,8 +73,8 @@ func (c TransportConfig) withDefaults() TransportConfig {
 }
 
 // buildTransport creates an *http.Transport from the configuration.
-func buildTransport(cfg TransportConfig) *http.Transport {
-	return &http.Transport{
+func buildTransport(cfg TransportConfig) (*http.Transport, error) {
+	t := &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout:   cfg.DialTimeout,
 			KeepAlive: 30 * time.Second,
@@ -88,4 +91,10 @@ func buildTransport(cfg TransportConfig) *http.Transport {
 		ForceAttemptHTTP2:     !cfg.DisableHTTP2,
 		DisableCompression:    cfg.DisableCompression,
 	}
+
+	if err := applyProxy(t, cfg.Proxy, cfg.DialTimeout); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }

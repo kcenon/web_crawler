@@ -1,6 +1,10 @@
 package crawler
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/kcenon/web_crawler/pkg/client"
+)
 
 // Builder provides a fluent API for constructing a Crawler instance.
 type Builder struct {
@@ -39,6 +43,22 @@ func (b *Builder) WithWorkerCount(count int) *Builder {
 // WithUserAgent sets the default User-Agent header.
 func (b *Builder) WithUserAgent(ua string) *Builder {
 	b.cfg.UserAgent = ua
+	return b
+}
+
+// WithProxy configures an HTTP or SOCKS5 proxy for all requests.
+func (b *Builder) WithProxy(proxyURL string) *Builder {
+	b.cfg.Client.Transport.Proxy = client.ProxyConfig{URL: proxyURL}
+	return b
+}
+
+// WithProxyAuth configures an authenticated proxy.
+func (b *Builder) WithProxyAuth(proxyURL, username, password string) *Builder {
+	b.cfg.Client.Transport.Proxy = client.ProxyConfig{
+		URL:      proxyURL,
+		Username: username,
+		Password: password,
+	}
 	return b
 }
 

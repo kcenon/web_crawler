@@ -365,20 +365,29 @@ func TestTransportConfig_Defaults(t *testing.T) {
 
 func TestTransportConfig_HTTP2Toggle(t *testing.T) {
 	// HTTP/2 enabled by default (DisableHTTP2 = false)
-	transport := buildTransport(TransportConfig{}.withDefaults())
+	transport, err := buildTransport(TransportConfig{}.withDefaults())
+	if err != nil {
+		t.Fatalf("buildTransport error: %v", err)
+	}
 	if !transport.ForceAttemptHTTP2 {
 		t.Error("ForceAttemptHTTP2 should be true by default")
 	}
 
 	// HTTP/2 disabled explicitly
-	transport = buildTransport(TransportConfig{DisableHTTP2: true}.withDefaults())
+	transport, err = buildTransport(TransportConfig{DisableHTTP2: true}.withDefaults())
+	if err != nil {
+		t.Fatalf("buildTransport error: %v", err)
+	}
 	if transport.ForceAttemptHTTP2 {
 		t.Error("ForceAttemptHTTP2 should be false when DisableHTTP2 is set")
 	}
 }
 
 func TestTransportConfig_TLS12Minimum(t *testing.T) {
-	transport := buildTransport(TransportConfig{}.withDefaults())
+	transport, err := buildTransport(TransportConfig{}.withDefaults())
+	if err != nil {
+		t.Fatalf("buildTransport error: %v", err)
+	}
 	if transport.TLSClientConfig.MinVersion != 0x0303 { // tls.VersionTLS12
 		t.Errorf("TLS MinVersion = %#x, want TLS 1.2 (%#x)", transport.TLSClientConfig.MinVersion, 0x0303)
 	}

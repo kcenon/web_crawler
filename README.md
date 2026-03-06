@@ -55,7 +55,7 @@ package main
 
 import (
     "context"
-    "github.com/webcrawler/crawler"
+    "github.com/kcenon/web_crawler/pkg/crawler"
 )
 
 func main() {
@@ -98,9 +98,47 @@ crawler crawl https://example.com --render-js
 crawler server start --port 50051
 ```
 
+## Development
+
+### Prerequisites
+
+- Go 1.23+
+- [golangci-lint](https://golangci-lint.run/) (for linting)
+
+### Build Commands
+
+```bash
+make build    # Build the crawler binary to bin/crawler
+make test     # Run all tests
+make lint     # Run linters
+make clean    # Remove build artifacts
+```
+
+### Project Structure
+
+```
+cmd/crawler/       CLI entry point
+pkg/               Public Go packages
+  crawler/         High-level crawling API
+  client/          HTTP client
+  browser/         Browser-based rendering
+  frontier/        URL frontier management
+  extractor/       Data extraction
+  middleware/      Middleware chain
+  storage/         Storage backends
+  server/          gRPC server
+  observability/   Logging and metrics
+internal/          Internal packages
+  scheduler/       Crawl scheduling
+  pipeline/        Data pipeline
+  util/            Shared utilities
+api/proto/         Protobuf definitions
+python/            Python SDK bindings
+```
+
 ## Requirements
 
-- Go 1.21+
+- Go 1.23+
 - Python 3.9+ (for Python bindings)
 - Chrome/Chromium (for JavaScript rendering)
 

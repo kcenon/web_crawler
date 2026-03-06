@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"id": 1, "title": "First Item", "url": "https://example.com/1"},
+    {"id": 2, "title": "Second Item", "url": "https://example.com/2"},
+    {"id": 3, "title": "Third Item", "url": "https://example.com/3"}
+  ],
+  "meta": {
+    "total": 3,
+    "page": 1
+  }
+}

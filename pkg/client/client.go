@@ -79,9 +79,14 @@ type Client struct {
 func New(cfg Config, opts ...Option) (*Client, error) {
 	cfg = cfg.withDefaults()
 
+	pool, err := newPool(cfg.Transport)
+	if err != nil {
+		return nil, fmt.Errorf("create connection pool: %w", err)
+	}
+
 	c := &Client{
 		cfg:  cfg,
-		pool: newPool(cfg.Transport),
+		pool: pool,
 	}
 
 	for _, opt := range opts {

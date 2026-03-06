@@ -17,8 +17,12 @@ type Pool struct {
 }
 
 // newPool creates a new Pool from the given TransportConfig.
-func newPool(cfg TransportConfig) *Pool {
-	return &Pool{transport: buildTransport(cfg)}
+func newPool(cfg TransportConfig) (*Pool, error) {
+	t, err := buildTransport(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Pool{transport: t}, nil
 }
 
 // stats returns current pool statistics.

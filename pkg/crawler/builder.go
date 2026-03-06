@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/kcenon/web_crawler/pkg/client"
 )
@@ -59,6 +60,12 @@ func (b *Builder) WithProxyAuth(proxyURL, username, password string) *Builder {
 		Username: username,
 		Password: password,
 	}
+	return b
+}
+
+// WithCookieJar enables cookie management using the provided jar.
+func (b *Builder) WithCookieJar(jar http.CookieJar) *Builder {
+	b.cfg.CookieJar = jar
 	return b
 }
 

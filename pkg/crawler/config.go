@@ -1,6 +1,8 @@
 package crawler
 
 import (
+	"net/http"
+
 	"github.com/kcenon/web_crawler/pkg/client"
 )
 
@@ -23,6 +25,9 @@ type Config struct {
 
 	// WorkerCount is the number of concurrent worker goroutines. Default: 10.
 	WorkerCount int
+
+	// CookieJar, if non-nil, enables cookie management for all requests.
+	CookieJar http.CookieJar
 }
 
 func (c Config) withDefaults() Config {

@@ -1,6 +1,7 @@
 .PHONY: all build test lint proto clean
 
 BINARY := bin/crawler
+PROTO_DIR := api/proto
 
 all: lint test build
 
@@ -14,7 +15,8 @@ lint:
 	golangci-lint run ./...
 
 proto:
-	@echo "proto generation not yet configured"
+	cd $(PROTO_DIR) && buf lint
+	cd $(PROTO_DIR) && buf generate
 
 clean:
 	rm -rf bin/

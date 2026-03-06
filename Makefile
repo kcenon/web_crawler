@@ -3,15 +3,15 @@
 BINARY := bin/crawler
 PROTO_DIR := api/proto
 
-all: lint test build
+all: proto lint test build
 
-build:
+build: proto
 	go build -o $(BINARY) ./cmd/crawler
 
-test:
+test: proto
 	go test ./...
 
-lint:
+lint: proto
 	golangci-lint run ./...
 
 proto:

@@ -1,0 +1,50 @@
+package frontier
+
+import "sync"
+
+// Deduplicator tracks seen URLs to avoid processing duplicates.
+type Deduplicator struct {
+	mu   sync.RWMutex
+	seen map[string]struct{}
+}
+
+// NewDeduplicator creates a new hash-set based deduplicator.
+func NewDeduplicator() *Deduplicator {
+	return &Deduplicator{
+		seen: make(map[string]struct{}),
+	}
+}
+
+// IsSeen returns true if the URL has already been seen.
+func (d *Deduplicator) IsSeen(url string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	_, ok := d.seen[url]
+	return ok
+}
+
+// MarkSeen marks a URL as seen. Returns true if the URL was new,
+// false if it was already seen.
+func (d *Deduplicator) MarkSeen(url string) bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if _, ok := d.seen[url]; ok {
+		return false
+	}
+	d.seen[url] = struct{}{}
+	return true
+}
+
+// Size returns the number of unique URLs seen.
+func (d *Deduplicator) Size() int {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return len(d.seen)
+}
+
+// Reset clears all seen URLs.
+func (d *Deduplicator) Reset() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.seen = make(map[string]struct{})
+}

@@ -51,6 +51,7 @@ func newEngine(cfg Config) (*Engine, error) {
 
 	httpClient, err := client.New(client.Config{
 		UserAgent: cfg.UserAgent,
+		CookieJar: cfg.CookieJar,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create http client: %w", err)

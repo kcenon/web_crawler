@@ -49,6 +49,11 @@ type Config struct {
 
 	// Transport configures the underlying HTTP transport.
 	Transport TransportConfig
+
+	// CookieJar, if non-nil, enables cookie management. Cookies from
+	// Set-Cookie response headers are stored and automatically sent
+	// on subsequent requests matching the cookie's domain and path.
+	CookieJar http.CookieJar
 }
 
 func (c Config) withDefaults() Config {
@@ -96,6 +101,7 @@ func New(cfg Config, opts ...Option) (*Client, error) {
 	c.httpClient = &http.Client{
 		Transport: c.pool.transport,
 		Timeout:   cfg.Timeout,
+		Jar:       cfg.CookieJar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= cfg.MaxRedirects {
 				return fmt.Errorf("stopped after %d redirects", cfg.MaxRedirects)

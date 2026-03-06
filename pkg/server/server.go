@@ -45,7 +45,7 @@ type crawlerInstance struct {
 type Server struct {
 	pb.UnimplementedCrawlerServiceServer
 
-	crawler  crawler.Crawler
+	crawler  crawler.Service
 	cfg      Config
 	grpc     *grpc.Server
 	health   *health.Server
@@ -57,7 +57,7 @@ type Server struct {
 }
 
 // New creates a new Server with the given Crawler implementation and config.
-func New(c crawler.Crawler, cfg Config, opts ...Option) *Server {
+func New(c crawler.Service, cfg Config, opts ...Option) *Server {
 	cfg = cfg.withDefaults()
 	s := &Server{
 		crawler:   c,

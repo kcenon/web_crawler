@@ -1,6 +1,6 @@
 module github.com/kcenon/web_crawler
 
-go 1.25.0
+go 1.24.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -11,6 +11,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/temoto/robotstxt v1.1.2
 	github.com/tidwall/gjson v1.18.0
+	golang.org/x/net v0.48.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.79.1
@@ -40,8 +41,7 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )

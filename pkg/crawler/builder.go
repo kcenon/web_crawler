@@ -49,3 +49,10 @@ func (b *Builder) Build() (Crawler, error) {
 	}
 	return newEngine(b.cfg)
 }
+
+// NewEngine creates a Crawler with the given configuration.
+// For more control, use NewBuilder instead.
+func NewEngine(cfg Config) Crawler {
+	e, _ := newEngine(cfg)
+	return e
+}

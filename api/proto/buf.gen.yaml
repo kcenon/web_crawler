@@ -9,6 +9,6 @@ plugins:
     opt:
       - module=github.com/kcenon/web_crawler
   - remote: buf.build/protocolbuffers/python
-    out: ../../python/crawler/pb
+    out: ../../python
   - remote: buf.build/grpc/python
-    out: ../../python/crawler/pb
+    out: ../../python

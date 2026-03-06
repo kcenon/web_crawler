@@ -70,7 +70,7 @@ temp/
 
 # Generated files
 pkg/server/pb/
-python/crawler/pb/
+python/crawler/v1/*_pb2*.py
 
 # Data files
 data/

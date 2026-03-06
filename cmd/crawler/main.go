@@ -1,7 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"os"
+
+	"github.com/kcenon/web_crawler/cmd/crawler/cmd"
+)
 
 func main() {
-	fmt.Println("web_crawler: use -h for help")
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

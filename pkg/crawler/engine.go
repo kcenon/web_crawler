@@ -23,10 +23,10 @@ type engineStats struct {
 
 // Engine implements the Crawler interface with a worker pool architecture.
 type Engine struct {
-	cfg            Config
-	httpClient     *client.Client
-	renderFetcher  *browser.RenderFetcher
-	concurrency    *ConcurrencyManager
+	cfg           Config
+	httpClient    *client.Client
+	renderFetcher *browser.RenderFetcher
+	concurrency   *ConcurrencyManager
 
 	urlQueue chan *CrawlRequest
 

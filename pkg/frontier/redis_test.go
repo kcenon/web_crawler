@@ -148,17 +148,16 @@ func TestRedisFrontier_DuplicateURL(t *testing.T) {
 	if err := f.Add(entry); err != nil {
 		t.Fatalf("first Add() error = %v", err)
 	}
-	// Second add should be silently rejected via ZADD NX, not an error
-	// because the exact payload differs (different DiscoveredAt). Verify
-	// that the size didn't change unexpectedly for fully identical entries.
+	// An identical entry (same URL and DiscoveredAt → same JSON member) must
+	// be rejected by ZADD NX and return ErrDuplicate.
 	err := f.Add(&URLEntry{URL: "http://example.com/dup", DiscoveredAt: entry.DiscoveredAt})
-	if err == nil {
-		// ZADD NX with same member returns 0 (not added), we return ErrDuplicate.
-		// But different timestamps produce different JSON members, so technically
-		// not duplicate from Redis perspective. Just verify no panic.
+	if err != ErrDuplicate {
+		t.Errorf("second Add() = %v, want ErrDuplicate", err)
 	}
 	// Clean up.
-	f.Next(context.Background())
+	if _, err := f.Next(context.Background()); err != nil {
+		t.Errorf("cleanup Next() error = %v", err)
+	}
 }
 
 func TestRedisFrontier_NilEntry(t *testing.T) {

@@ -32,11 +32,12 @@ type CrawlStats struct {
 
 // CrawlRequest represents a request within the crawl pipeline.
 type CrawlRequest struct {
-	URL     string
-	Method  string
-	Headers map[string]string
-	Depth   int
-	Meta    map[string]string
+	URL           string
+	Method        string
+	Headers       map[string]string
+	Depth         int
+	Meta          map[string]string
+	BrowserRender bool
 }
 
 // CrawlResponse represents a response within the crawl pipeline.

@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kcenon/web_crawler/pkg/browser"
 	"github.com/kcenon/web_crawler/pkg/client"
 )
 
@@ -22,9 +23,10 @@ type engineStats struct {
 
 // Engine implements the Crawler interface with a worker pool architecture.
 type Engine struct {
-	cfg         Config
-	httpClient  *client.Client
-	concurrency *ConcurrencyManager
+	cfg           Config
+	httpClient    *client.Client
+	renderFetcher *browser.RenderFetcher
+	concurrency   *ConcurrencyManager
 
 	urlQueue chan *CrawlRequest
 
@@ -57,12 +59,18 @@ func newEngine(cfg Config) (*Engine, error) {
 		return nil, fmt.Errorf("create http client: %w", err)
 	}
 
+	var renderFetcher *browser.RenderFetcher
+	if cfg.BrowserPool != nil {
+		renderFetcher = browser.NewRenderFetcher(cfg.BrowserPool)
+	}
+
 	return &Engine{
-		cfg:         cfg,
-		httpClient:  httpClient,
-		concurrency: NewConcurrencyManager(cfg.Concurrency),
-		urlQueue:    make(chan *CrawlRequest, 10000),
-		htmlCBs:     make(map[string][]HTMLCallback),
+		cfg:           cfg,
+		httpClient:    httpClient,
+		renderFetcher: renderFetcher,
+		concurrency:   NewConcurrencyManager(cfg.Concurrency),
+		urlQueue:      make(chan *CrawlRequest, 10000),
+		htmlCBs:       make(map[string][]HTMLCallback),
 	}, nil
 }
 
@@ -244,7 +252,12 @@ func (e *Engine) processRequest(req *CrawlRequest) {
 		method = "GET"
 	}
 
-	httpResp, err := e.httpClient.Do(e.ctx, &client.Request{
+	var fetcher client.HTTPClient = e.httpClient
+	if req.BrowserRender && e.renderFetcher != nil {
+		fetcher = e.renderFetcher
+	}
+
+	httpResp, err := fetcher.Do(e.ctx, &client.Request{
 		URL:     req.URL,
 		Method:  method,
 		Headers: req.Headers,

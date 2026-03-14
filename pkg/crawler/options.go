@@ -27,3 +27,9 @@ func WithMeta(key, value string) RequestOption {
 func WithDepth(depth int) RequestOption {
 	return func(r *CrawlRequest) { r.Depth = depth }
 }
+
+// WithBrowserRender marks a request for JavaScript rendering via the browser
+// pool. The engine must be configured with a Renderer for this to take effect.
+func WithBrowserRender() RequestOption {
+	return func(r *CrawlRequest) { r.BrowserRender = true }
+}

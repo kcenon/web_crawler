@@ -3,6 +3,7 @@ package crawler
 import (
 	"net/http"
 
+	"github.com/kcenon/web_crawler/pkg/browser"
 	"github.com/kcenon/web_crawler/pkg/client"
 )
 
@@ -28,6 +29,10 @@ type Config struct {
 
 	// CookieJar, if non-nil, enables cookie management for all requests.
 	CookieJar http.CookieJar
+
+	// BrowserPool, if non-nil, enables JavaScript rendering for requests
+	// marked with WithBrowserRender(). The pool is not closed by the engine.
+	BrowserPool *browser.Pool
 }
 
 func (c Config) withDefaults() Config {

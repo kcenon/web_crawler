@@ -53,17 +53,17 @@ const benchStartNsKey = "bench.start_ns"
 
 // benchmarkReport holds the final benchmark results.
 type benchmarkReport struct {
-	URL         string  `json:"url"`
-	Workers     int     `json:"workers"`
-	TotalSent   int     `json:"total_requests_sent"`
-	Successful  int64   `json:"successful"`
-	Failed      int64   `json:"failed"`
-	WallTime    string  `json:"wall_time"`
-	Throughput  float64 `json:"throughput_req_per_sec"`
-	LatencyP50  string  `json:"latency_p50_ms"`
-	LatencyP95  string  `json:"latency_p95_ms"`
-	LatencyP99  string  `json:"latency_p99_ms"`
-	MemUsageMB  float64 `json:"mem_alloc_mb"`
+	URL        string  `json:"url"`
+	Workers    int     `json:"workers"`
+	TotalSent  int     `json:"total_requests_sent"`
+	Successful int64   `json:"successful"`
+	Failed     int64   `json:"failed"`
+	WallTime   string  `json:"wall_time"`
+	Throughput float64 `json:"throughput_req_per_sec"`
+	LatencyP50 string  `json:"latency_p50_ms"`
+	LatencyP95 string  `json:"latency_p95_ms"`
+	LatencyP99 string  `json:"latency_p99_ms"`
+	MemUsageMB float64 `json:"mem_alloc_mb"`
 }
 
 func runBenchmark(_ *cobra.Command, args []string) error {

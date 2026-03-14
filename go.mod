@@ -1,6 +1,6 @@
 module github.com/kcenon/web_crawler
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -10,9 +10,9 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/temoto/robotstxt v1.1.2
+	github.com/testcontainers/testcontainers-go v0.34.0
 	github.com/tidwall/gjson v1.18.0
-	github.com/testcontainers/testcontainers-go v0.41.0
-	golang.org/x/net v0.48.0
+	golang.org/x/net v0.49.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.79.1
@@ -62,7 +62,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/redis/go-redis/v9 v9.18.0 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.2 // indirect
+	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect

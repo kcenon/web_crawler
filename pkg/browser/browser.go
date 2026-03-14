@@ -3,9 +3,9 @@ package browser
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/chromedp/chromedp"
-	"sync/atomic"
 )
 
 // Browser wraps a single chromedp browser instance with lifecycle tracking.

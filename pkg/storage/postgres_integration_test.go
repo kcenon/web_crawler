@@ -5,26 +5,57 @@ package storage
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// postgresTestDSN returns the DSN for integration tests.
-// Set POSTGRES_TEST_DSN in the environment, e.g.:
-//
-//	POSTGRES_TEST_DSN="postgres://postgres:password@localhost:5432/test_db?sslmode=disable"
-func postgresTestDSN(t *testing.T) string {
+// startPostgresContainer starts a PostgreSQL 15 container and returns its DSN.
+func startPostgresContainer(t *testing.T) string {
 	t.Helper()
-	dsn := os.Getenv("POSTGRES_TEST_DSN")
-	if dsn == "" {
-		t.Skip("POSTGRES_TEST_DSN not set; skipping integration test")
+	ctx := context.Background()
+
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:15-alpine",
+		ExposedPorts: []string{"5432/tcp"},
+		Env: map[string]string{
+			"POSTGRES_USER":     "postgres",
+			"POSTGRES_PASSWORD": "password",
+			"POSTGRES_DB":       "testdb",
+		},
+		WaitingFor: wait.ForLog("database system is ready to accept connections").
+			WithOccurrence(2).
+			WithStartupTimeout(60 * time.Second),
 	}
-	return dsn
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatalf("start Postgres container: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := container.Terminate(context.Background()); err != nil {
+			t.Logf("terminate Postgres container: %v", err)
+		}
+	})
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		t.Fatalf("get container host: %v", err)
+	}
+	port, err := container.MappedPort(ctx, "5432")
+	if err != nil {
+		t.Fatalf("get mapped port: %v", err)
+	}
+
+	return fmt.Sprintf("postgres://postgres:password@%s:%s/testdb?sslmode=disable", host, port.Port())
 }
 
-func TestPostgresPlugin_InitAndMigrate(t *testing.T) {
-	dsn := postgresTestDSN(t)
+func TestPostgresPlugin_Integration_InitAndMigrate(t *testing.T) {
+	dsn := startPostgresContainer(t)
 
 	p := NewPostgresPlugin(PostgresConfig{DSN: dsn})
 	if err := p.Init(nil); err != nil {
@@ -40,8 +71,8 @@ func TestPostgresPlugin_InitAndMigrate(t *testing.T) {
 	defer p2.Close()
 }
 
-func TestPostgresPlugin_Store100Items(t *testing.T) {
-	dsn := postgresTestDSN(t)
+func TestPostgresPlugin_Integration_Store100Items(t *testing.T) {
+	dsn := startPostgresContainer(t)
 
 	p := NewPostgresPlugin(PostgresConfig{DSN: dsn, BatchSize: 10})
 	if err := p.Init(nil); err != nil {
@@ -50,11 +81,6 @@ func TestPostgresPlugin_Store100Items(t *testing.T) {
 	defer p.Close()
 
 	ctx := context.Background()
-
-	// Clean up before test.
-	if _, err := p.pool.Exec(ctx, "DELETE FROM crawled_items WHERE url LIKE 'https://test-item-%'"); err != nil {
-		t.Fatalf("cleanup: %v", err)
-	}
 
 	items := make([]Item, 100)
 	ts := time.Now().UTC().Truncate(time.Microsecond)
@@ -67,29 +93,22 @@ func TestPostgresPlugin_Store100Items(t *testing.T) {
 		}
 	}
 
-	// Store via CopyFrom (len >= BatchSize).
 	if err := p.Store(ctx, items); err != nil {
 		t.Fatalf("store: %v", err)
 	}
 
 	var count int
-	row := p.pool.QueryRow(ctx,
-		"SELECT COUNT(*) FROM crawled_items WHERE url LIKE 'https://test-item-%'")
+	row := p.pool.QueryRow(ctx, "SELECT COUNT(*) FROM crawled_items WHERE url LIKE 'https://test-item-%'")
 	if err := row.Scan(&count); err != nil {
 		t.Fatalf("count: %v", err)
 	}
 	if count != 100 {
 		t.Errorf("expected 100 rows, got %d", count)
 	}
-
-	// Clean up.
-	if _, err := p.pool.Exec(ctx, "DELETE FROM crawled_items WHERE url LIKE 'https://test-item-%'"); err != nil {
-		t.Logf("cleanup warning: %v", err)
-	}
 }
 
-func TestPostgresPlugin_SmallBatchInsert(t *testing.T) {
-	dsn := postgresTestDSN(t)
+func TestPostgresPlugin_Integration_SmallBatchInsert(t *testing.T) {
+	dsn := startPostgresContainer(t)
 
 	p := NewPostgresPlugin(PostgresConfig{DSN: dsn, BatchSize: 10})
 	if err := p.Init(nil); err != nil {
@@ -99,37 +118,28 @@ func TestPostgresPlugin_SmallBatchInsert(t *testing.T) {
 
 	ctx := context.Background()
 
-	const marker = "https://small-batch-test.example.com"
-	if _, err := p.pool.Exec(ctx, "DELETE FROM crawled_items WHERE url = $1", marker); err != nil {
-		t.Fatalf("cleanup: %v", err)
-	}
-
 	// Store 3 items (< BatchSize=10) → uses insertBatch.
 	items := []Item{
-		{URL: marker, Data: map[string]any{"k": "v"}, CrawledAt: time.Now().UTC()},
-		{URL: marker, Data: map[string]any{"k": "v2"}, CrawledAt: time.Now().UTC()},
-		{URL: marker, Data: map[string]any{"k": "v3"}, CrawledAt: time.Now().UTC()},
+		{URL: "https://small-1.example.com", Data: map[string]any{"k": "v1"}, CrawledAt: time.Now().UTC()},
+		{URL: "https://small-2.example.com", Data: map[string]any{"k": "v2"}, CrawledAt: time.Now().UTC()},
+		{URL: "https://small-3.example.com", Data: map[string]any{"k": "v3"}, CrawledAt: time.Now().UTC()},
 	}
 	if err := p.Store(ctx, items); err != nil {
 		t.Fatalf("store small batch: %v", err)
 	}
 
 	var count int
-	row := p.pool.QueryRow(ctx, "SELECT COUNT(*) FROM crawled_items WHERE url = $1", marker)
+	row := p.pool.QueryRow(ctx, "SELECT COUNT(*) FROM crawled_items WHERE url LIKE 'https://small-%.example.com'")
 	if err := row.Scan(&count); err != nil {
 		t.Fatalf("count: %v", err)
 	}
 	if count != 3 {
 		t.Errorf("expected 3 rows, got %d", count)
 	}
-
-	if _, err := p.pool.Exec(ctx, "DELETE FROM crawled_items WHERE url = $1", marker); err != nil {
-		t.Logf("cleanup warning: %v", err)
-	}
 }
 
-func TestPostgresPlugin_InitFromConfig(t *testing.T) {
-	dsn := postgresTestDSN(t)
+func TestPostgresPlugin_Integration_InitFromConfig(t *testing.T) {
+	dsn := startPostgresContainer(t)
 
 	p := NewPostgresPlugin(PostgresConfig{})
 	if err := p.Init(map[string]any{"dsn": dsn}); err != nil {
@@ -138,7 +148,7 @@ func TestPostgresPlugin_InitFromConfig(t *testing.T) {
 	defer p.Close()
 }
 
-func TestPostgresPlugin_StoreNotInitialized(t *testing.T) {
+func TestPostgresPlugin_Integration_StoreNotInitialized(t *testing.T) {
 	p := NewPostgresPlugin(PostgresConfig{DSN: "unused"})
 	err := p.Store(context.Background(), testItems())
 	if err == nil {
@@ -146,7 +156,7 @@ func TestPostgresPlugin_StoreNotInitialized(t *testing.T) {
 	}
 }
 
-func TestPostgresPlugin_InitMissingDSN(t *testing.T) {
+func TestPostgresPlugin_Integration_InitMissingDSN(t *testing.T) {
 	p := NewPostgresPlugin(PostgresConfig{})
 	if err := p.Init(nil); err == nil {
 		t.Error("expected error for missing DSN")

@@ -84,11 +84,8 @@ func TestRenderer_WaitSelector(t *testing.T) {
 
 	r := newRendererForTest(t)
 	res, err := r.Render(context.Background(), browser.RenderRequest{
-		URL: srv.URL + "/",
-		Wait: browser.WaitSelector{
-			Selector: "#app",
-			Timeout:  5 * time.Second,
-		},
+		URL:  srv.URL + "/",
+		Wait: browser.WaitSelector{Selector: "#app"},
 	})
 	if err != nil {
 		t.Fatalf("Render: %v", err)

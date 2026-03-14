@@ -85,19 +85,15 @@ func waitNetworkIdle(ctx context.Context, quiet, maxWait time.Duration) error {
 
 // WaitSelector waits until the given CSS selector is present in the DOM.
 // This is the most reliable condition for pages that render a specific element
-// when content is ready.
+// when content is ready. The overall timeout is controlled by RenderRequest.Timeout.
 type WaitSelector struct {
 	// Selector is the CSS selector to wait for (required).
 	Selector string
-	// Timeout is the maximum time to wait. Zero uses 30s.
-	Timeout time.Duration
 }
 
 func (w WaitSelector) actions(_ context.Context) []chromedp.Action {
-	timeout := w.Timeout
-	if timeout == 0 {
-		timeout = 30 * time.Second
-	}
+	// Timeout is respected via the context deadline set by Renderer.Render.
+	// chromedp.WaitVisible inherits cancellation from the tab context.
 	return []chromedp.Action{
 		chromedp.WaitVisible(w.Selector, chromedp.ByQuery),
 	}

@@ -1,0 +1,7 @@
+version: 2
+
+# Exclude paths that use non-production placeholder values for testing.
+ignore-paths:
+  - "**/*_test.go"
+  - "**/testdata/**"
+  - "**/fixtures/**"

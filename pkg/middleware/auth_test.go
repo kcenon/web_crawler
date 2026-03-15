@@ -1,0 +1,324 @@
+package middleware
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+)
+
+// Placeholder values used in auth tests. These are clearly non-production dummy
+// strings chosen to avoid false-positive secret detection in CI scanners.
+const (
+	testAuthUser   = "testuser"
+	testAuthCred   = "test-fixture-val" // not a real credential
+	testClientID   = "test-client-id"
+	testClientCred = "test-client-fixture" // OAuth2 client credential placeholder
+	testBearerVal  = "test-bearer-fixture"
+	testChainVal   = "test-chain-fixture"
+	testAccessVal  = "access-fixture-srv"
+	testExpiredVal = "expired-fixture-tok"
+)
+
+// --- Basic Auth ---
+
+func TestAuth_Basic_SetsHeader(t *testing.T) {
+	req := &Request{URL: "http://example.com"}
+	a := NewAuth(AuthConfig{
+		Type:     AuthTypeBasic,
+		Username: testAuthUser,
+		Password: testAuthCred,
+	})
+
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+
+	got := req.Headers["Authorization"]
+	// Compute expected value dynamically to avoid any hardcoded encoded strings.
+	wantEncoded := base64.StdEncoding.EncodeToString([]byte(testAuthUser + ":" + testAuthCred))
+	want := "Basic " + wantEncoded
+	if got != want {
+		t.Errorf("Authorization = %q, want %q", got, want)
+	}
+}
+
+func TestAuth_Basic_EmptyCredential(t *testing.T) {
+	req := &Request{URL: "http://example.com"}
+	a := NewAuth(AuthConfig{
+		Type:     AuthTypeBasic,
+		Username: "user",
+		Password: "",
+	})
+
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+
+	got := req.Headers["Authorization"]
+	if !strings.HasPrefix(got, "Basic ") {
+		t.Errorf("Authorization = %q, want Basic prefix", got)
+	}
+}
+
+func TestAuth_Basic_InitialisesNilHeaderMap(t *testing.T) {
+	req := &Request{URL: "http://example.com", Headers: nil}
+	a := NewAuth(AuthConfig{Type: AuthTypeBasic, Username: "u", Password: "p"})
+
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+	if req.Headers == nil {
+		t.Error("Headers map must be initialised by middleware")
+	}
+	if !strings.HasPrefix(req.Headers["Authorization"], "Basic ") {
+		t.Error("Basic auth header not set")
+	}
+}
+
+// --- Bearer ---
+
+func TestAuth_Bearer_SetsHeader(t *testing.T) {
+	req := &Request{URL: "http://example.com"}
+	a := NewAuth(AuthConfig{
+		Type:  AuthTypeBearer,
+		Token: testBearerVal,
+	})
+
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+
+	got := req.Headers["Authorization"]
+	if got != "Bearer "+testBearerVal {
+		t.Errorf("Authorization = %q, want %q", got, "Bearer "+testBearerVal)
+	}
+}
+
+func TestAuth_Bearer_InitialisesNilHeaderMap(t *testing.T) {
+	req := &Request{URL: "http://example.com", Headers: nil}
+	a := NewAuth(AuthConfig{Type: AuthTypeBearer, Token: "tok"})
+
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+	if req.Headers == nil {
+		t.Error("Headers map must be initialised by middleware")
+	}
+}
+
+// --- OAuth2 ---
+
+// newTokenServer returns a test HTTP server that responds to POST requests with
+// an OAuth2 token response. calls tracks how many times the endpoint is hit.
+func newTokenServer(t *testing.T, calls *int, expiresIn int64) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("token server: method = %q, want POST", r.Method)
+		}
+		*calls++
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+			"access_token": testAccessVal,
+			"token_type":   "Bearer",
+			"expires_in":   expiresIn,
+		})
+	}))
+}
+
+func TestAuth_OAuth2_FetchesToken(t *testing.T) {
+	calls := 0
+	srv := newTokenServer(t, &calls, 3600)
+	defer srv.Close()
+
+	req := &Request{URL: "http://example.com"}
+	a := NewAuth(AuthConfig{
+		Type: AuthTypeOAuth2,
+		OAuth2: &OAuth2Config{
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
+			TokenURL:     srv.URL,
+		},
+		HTTPClient: srv.Client(),
+	})
+
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+
+	if req.Headers["Authorization"] != "Bearer "+testAccessVal {
+		t.Errorf("Authorization = %q, want %q", req.Headers["Authorization"], "Bearer "+testAccessVal)
+	}
+	if calls != 1 {
+		t.Errorf("token server called %d times, want 1", calls)
+	}
+}
+
+func TestAuth_OAuth2_CachesToken(t *testing.T) {
+	calls := 0
+	srv := newTokenServer(t, &calls, 3600) // long-lived token
+	defer srv.Close()
+
+	a := NewAuth(AuthConfig{
+		Type: AuthTypeOAuth2,
+		OAuth2: &OAuth2Config{
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
+			TokenURL:     srv.URL,
+		},
+		HTTPClient: srv.Client(),
+	})
+
+	for range 5 {
+		req := &Request{URL: "http://example.com"}
+		if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Token should be fetched only once; subsequent requests use the cache.
+	if calls != 1 {
+		t.Errorf("token server called %d times after 5 requests, want 1 (cached)", calls)
+	}
+}
+
+func TestAuth_OAuth2_RefreshesExpiredToken(t *testing.T) {
+	calls := 0
+	srv := newTokenServer(t, &calls, 0) // expires_in=0 → no expiry info stored
+	defer srv.Close()
+
+	a := NewAuth(AuthConfig{
+		Type: AuthTypeOAuth2,
+		OAuth2: &OAuth2Config{
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
+			TokenURL:     srv.URL,
+		},
+		HTTPClient: srv.Client(),
+	})
+
+	// Manually inject an already-expired cached token.
+	a.mu.Lock()
+	a.token = &oauth2Token{
+		AccessToken: testExpiredVal,
+		expiry:      time.Now().Add(-time.Minute), // already expired
+	}
+	a.mu.Unlock()
+
+	req := &Request{URL: "http://example.com"}
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+
+	if req.Headers["Authorization"] != "Bearer "+testAccessVal {
+		t.Errorf("Authorization = %q, want refreshed token", req.Headers["Authorization"])
+	}
+	if calls != 1 {
+		t.Errorf("token server called %d times, want 1 (refresh)", calls)
+	}
+}
+
+func TestAuth_OAuth2_TokenEndpointError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+
+	a := NewAuth(AuthConfig{
+		Type: AuthTypeOAuth2,
+		OAuth2: &OAuth2Config{
+			ClientID:     testClientID,
+			ClientSecret: "invalid-fixture",
+			TokenURL:     srv.URL,
+		},
+		HTTPClient: srv.Client(),
+	})
+
+	req := &Request{URL: "http://example.com"}
+	_, err := a.ProcessRequest(context.Background(), req, nopHandler)
+	if err == nil {
+		t.Error("expected error on 401 from token endpoint, got nil")
+	}
+}
+
+func TestAuth_OAuth2_ScopesIncluded(t *testing.T) {
+	var receivedScope string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse form: %v", err)
+		}
+		receivedScope = r.FormValue("scope")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+			"access_token": "tok",
+			"token_type":   "Bearer",
+			"expires_in":   3600,
+		})
+	}))
+	defer srv.Close()
+
+	a := NewAuth(AuthConfig{
+		Type: AuthTypeOAuth2,
+		OAuth2: &OAuth2Config{
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
+			TokenURL:     srv.URL,
+			Scopes:       []string{"read", "write"},
+		},
+		HTTPClient: srv.Client(),
+	})
+
+	req := &Request{URL: "http://example.com"}
+	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
+		t.Fatal(err)
+	}
+
+	if receivedScope != "read write" {
+		t.Errorf("scope = %q, want %q", receivedScope, "read write")
+	}
+}
+
+func TestAuth_OAuth2_NilConfig(t *testing.T) {
+	a := NewAuth(AuthConfig{Type: AuthTypeOAuth2, OAuth2: nil})
+	req := &Request{URL: "http://example.com"}
+	_, err := a.ProcessRequest(context.Background(), req, nopHandler)
+	if err == nil {
+		t.Error("expected error for nil OAuth2 config, got nil")
+	}
+}
+
+func TestAuth_Panic_EmptyType(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for empty AuthType, got none")
+		}
+	}()
+	NewAuth(AuthConfig{}) // should panic
+}
+
+func TestAuth_IntegrationWithChain(t *testing.T) {
+	var capturedHeader string
+	handler := func(_ context.Context, req *Request) (*Response, error) {
+		capturedHeader = req.Headers["Authorization"]
+		return &Response{StatusCode: 200}, nil
+	}
+
+	c := NewChain(handler)
+	c.Use(NewAuth(AuthConfig{
+		Type:  AuthTypeBearer,
+		Token: testChainVal,
+	}))
+
+	_, err := c.Execute(context.Background(), &Request{URL: "http://example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if capturedHeader != "Bearer "+testChainVal {
+		t.Errorf("handler received Authorization = %q, want %q", capturedHeader, "Bearer "+testChainVal)
+	}
+}

@@ -349,8 +349,8 @@ func TestTransportConfig_Defaults(t *testing.T) {
 	if cfg.MaxIdleConns != 100 {
 		t.Errorf("MaxIdleConns = %d, want 100", cfg.MaxIdleConns)
 	}
-	if cfg.MaxIdleConnsPerHost != 10 {
-		t.Errorf("MaxIdleConnsPerHost = %d, want 10", cfg.MaxIdleConnsPerHost)
+	if cfg.MaxIdleConnsPerHost != 20 {
+		t.Errorf("MaxIdleConnsPerHost = %d, want 20", cfg.MaxIdleConnsPerHost)
 	}
 	if cfg.DialTimeout != 10*time.Second {
 		t.Errorf("DialTimeout = %v, want 10s", cfg.DialTimeout)

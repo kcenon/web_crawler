@@ -55,7 +55,10 @@ func (c TransportConfig) withDefaults() TransportConfig {
 		c.MaxIdleConns = 100
 	}
 	if c.MaxIdleConnsPerHost == 0 {
-		c.MaxIdleConnsPerHost = 10
+		// Default to 20 idle connections per host. This prevents connection
+		// starvation when the crawler runs 10+ workers against the same domain.
+		// The Go standard library default of 2 is far too low for crawling.
+		c.MaxIdleConnsPerHost = 20
 	}
 	if c.DialTimeout == 0 {
 		c.DialTimeout = 10 * time.Second

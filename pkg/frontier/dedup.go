@@ -9,9 +9,10 @@ type Deduplicator struct {
 }
 
 // NewDeduplicator creates a new hash-set based deduplicator.
-func NewDeduplicator() *Deduplicator {
+// capacity is a pre-allocation hint for the underlying map; 0 uses the Go default.
+func NewDeduplicator(capacity int) *Deduplicator {
 	return &Deduplicator{
-		seen: make(map[string]struct{}),
+		seen: make(map[string]struct{}, capacity),
 	}
 }
 
@@ -46,5 +47,5 @@ func (d *Deduplicator) Size() int {
 func (d *Deduplicator) Reset() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.seen = make(map[string]struct{})
+	d.seen = make(map[string]struct{}, len(d.seen))
 }

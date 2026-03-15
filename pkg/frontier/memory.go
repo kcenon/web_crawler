@@ -22,6 +22,12 @@ type Config struct {
 	// CrawlDelay is the minimum delay between requests to the same domain.
 	// A zero value means no delay. Use DefaultConfig() for sensible defaults.
 	CrawlDelay time.Duration
+
+	// InitialCapacity is a pre-allocation hint for the deduplication map and
+	// the priority queue backing slice. Setting this to an estimate of the
+	// total number of URLs to be crawled reduces rehash and slice-growth
+	// cycles, lowering GC pressure. A zero value uses Go's default behavior.
+	InitialCapacity int
 }
 
 // DefaultConfig returns a Config with sensible defaults.
@@ -50,10 +56,11 @@ type MemoryFrontier struct {
 
 // NewMemoryFrontier creates an in-memory frontier with the given config.
 func NewMemoryFrontier(cfg Config) *MemoryFrontier {
+	cap := cfg.InitialCapacity
 	return &MemoryFrontier{
 		cfg:        cfg,
-		pq:         newPriorityQueue(),
-		dedup:      NewDeduplicator(),
+		pq:         newPriorityQueue(cap),
+		dedup:      NewDeduplicator(cap),
 		filter:     NewFilter(),
 		notify:     make(chan struct{}, 1),
 		domainLast: make(map[string]time.Time),

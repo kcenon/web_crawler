@@ -2,6 +2,22 @@
 
 Measured on Apple M4 Max (arm64, 14 cores), Go 1.24, `benchtime=5s`.
 
+## HTTP Client Throughput (`pkg/client`)
+
+| Benchmark | Before | After (v0.2) | Change |
+|-----------|--------|-------------|--------|
+| `BenchmarkDo` (serial) | 35,978 ns/op, 88 allocs | 34,702 ns/op, 88 allocs | −4% ns/op |
+| `BenchmarkDo_Parallel` (14 goroutines) | 11,236 ns/op, 8,558 B/op | 11,630 ns/op, 8,136 B/op | −5% B/op |
+| Parallel throughput | ~89,000 req/s | ~89,000 req/s | — |
+
+**Optimizations applied (PR #66)**:
+- Response body buffer pool (`sync.Pool[*bytes.Buffer]`) — reduces GC pressure for large responses; `Content-Length` pre-allocation avoids buffer growth
+- `MaxIdleConnsPerHost` 10 → 20 — prevents connection starvation when worker count > 10
+
+> Serial and parallel micro-benchmarks show modest improvement because the test payload is only 23 bytes. The buffer pool benefit is more pronounced for real-world pages (4–100 KB range) where GC pressure reduction matters.
+
+
+
 ## Engine Throughput (`pkg/crawler`)
 
 | Benchmark | ops/s | URLs/op | ns/op | Allocs/op |

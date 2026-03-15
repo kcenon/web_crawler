@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -152,7 +153,7 @@ func (c *Client) Do(ctx context.Context, req *Request) (*Response, error) {
 	}
 	defer httpResp.Body.Close()
 
-	body, err := io.ReadAll(httpResp.Body)
+	body, err := readBody(httpResp)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
@@ -176,4 +177,26 @@ func (c *Client) Stats() PoolStats {
 func (c *Client) Close() error {
 	c.pool.close()
 	return nil
+}
+
+// readBody reads the response body using a pooled buffer to reduce allocations.
+// If Content-Length is known the buffer is pre-grown to avoid internal resizing.
+func readBody(resp *http.Response) ([]byte, error) {
+	buf := acquireBuf()
+	defer releaseBuf(buf)
+
+	if cl := resp.Header.Get("Content-Length"); cl != "" {
+		if n, err := strconv.ParseInt(cl, 10, 64); err == nil && n > 0 {
+			buf.Grow(int(n))
+		}
+	}
+
+	if _, err := io.Copy(buf, resp.Body); err != nil {
+		return nil, err
+	}
+
+	// Return a copy so callers own the slice independently of the pool buffer.
+	out := make([]byte, buf.Len())
+	copy(out, buf.Bytes())
+	return out, nil
 }

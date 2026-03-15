@@ -1,0 +1,126 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  benchmark:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - uses: bufbuild/buf-setup-action@v1
+
+      - name: Generate protobuf code
+        run: buf generate
+        working-directory: api/proto
+
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+
+      - name: Restore baseline benchmark results
+        if: github.event_name == 'pull_request'
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: bench-baseline.txt
+          key: bench-baseline-${{ github.event.pull_request.base.sha }}
+          restore-keys: bench-baseline-
+
+      - name: Run benchmarks
+        run: |
+          go test -run='^$' -bench=. -benchmem -count=3 -benchtime=1s \
+            ./pkg/client/... \
+            ./pkg/crawler/... \
+            ./pkg/frontier/... \
+            ./pkg/middleware/... \
+            ./internal/testutil/... \
+            2>/dev/null | tee bench-current.txt
+
+      - name: Prepare and cache baseline (on main push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: cp bench-current.txt bench-baseline.txt
+
+      - name: Save baseline to cache (on main push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: bench-baseline.txt
+          key: bench-baseline-${{ github.sha }}
+
+      - name: Compare benchmarks
+        if: github.event_name == 'pull_request' && steps.cache-restore.outputs.cache-hit == 'true'
+        id: benchstat
+        run: |
+          benchstat bench-baseline.txt bench-current.txt | tee bench-delta.txt
+          {
+            echo "result<<BENCHSTAT_EOF"
+            cat bench-delta.txt
+            echo "BENCHSTAT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post benchmark results as PR comment
+        if: github.event_name == 'pull_request' && steps.cache-restore.outputs.cache-hit == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = `${{ steps.benchstat.outputs.result }}`;
+            const body = [
+              "## Benchmark Results",
+              "",
+              "Comparison against `main` baseline (`benchstat`):",
+              "",
+              "```",
+              result,
+              "```",
+              "",
+              "> `~` = no significant change &nbsp; `+N%` = regression &nbsp; `-N%` = improvement",
+            ].join("\n");
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = "## Benchmark Results";
+            const existing = comments.find(
+              (c) => c.user.type === "Bot" && c.body.startsWith(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }
+
+      - name: Upload benchmark results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ github.sha }}
+          path: bench-current.txt
+          retention-days: 90

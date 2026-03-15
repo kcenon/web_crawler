@@ -26,7 +26,22 @@ func (d *Deduplicator) IsSeen(url string) bool {
 
 // MarkSeen marks a URL as seen. Returns true if the URL was new,
 // false if it was already seen.
+//
+// Uses a read-before-write pattern: duplicate URLs (the common case in a
+// running crawl) are detected under a shared read lock without blocking
+// concurrent readers or other writers. Only genuinely new URLs escalate to
+// an exclusive write lock, with a re-check to guard against a concurrent
+// insert that may have occurred between the read unlock and write lock.
 func (d *Deduplicator) MarkSeen(url string) bool {
+	// Fast path: check under read lock (concurrent with other readers).
+	d.mu.RLock()
+	_, ok := d.seen[url]
+	d.mu.RUnlock()
+	if ok {
+		return false
+	}
+
+	// Slow path: URL appears new — acquire write lock and re-check.
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if _, ok := d.seen[url]; ok {

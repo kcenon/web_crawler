@@ -126,6 +126,43 @@ func TestDedup_Standalone(t *testing.T) {
 	}
 }
 
+func TestDedup_ConcurrentMarkSeen(t *testing.T) {
+	const (
+		goroutines = 20
+		urls       = 50
+	)
+	d := NewDeduplicator(urls)
+
+	// Each goroutine tries to mark the same set of URLs.
+	// Exactly `urls` of the total attempts should succeed (return true).
+	results := make(chan bool, goroutines*urls)
+	var wg sync.WaitGroup
+	for g := 0; g < goroutines; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < urls; i++ {
+				results <- d.MarkSeen(fmt.Sprintf("http://example.com/%d", i))
+			}
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	newCount := 0
+	for r := range results {
+		if r {
+			newCount++
+		}
+	}
+	if newCount != urls {
+		t.Errorf("new URL count = %d, want %d (each URL should be new exactly once)", newCount, urls)
+	}
+	if d.Size() != urls {
+		t.Errorf("Size = %d, want %d", d.Size(), urls)
+	}
+}
+
 func TestMemoryFrontier_InitialCapacity(t *testing.T) {
 	const n = 1000
 	f := NewMemoryFrontier(Config{InitialCapacity: n})

@@ -123,7 +123,8 @@ func (pr *ProxyRotation) pick() (int, bool) {
 	case ProxyRotationWeighted:
 		return pr.pickWeighted()
 	default: // ProxyRotationRoundRobin
-		base := int(pr.index.Add(1) - 1)
+		// Apply % n before casting to int: result is in [0, n-1] which fits in int.
+		base := int((pr.index.Add(1) - 1) % uint64(n)) //nolint:gosec // bounded to [0,n-1]
 		for i := 0; i < n; i++ {
 			idx := (base + i) % n
 			if pr.isHealthy(idx) {

@@ -34,8 +34,9 @@ func (pq *priorityQueue) Pop() any {
 }
 
 // newPriorityQueue creates an empty priority queue.
-func newPriorityQueue() *priorityQueue {
-	pq := make(priorityQueue, 0)
+// capacity is a pre-allocation hint; 0 uses the Go default.
+func newPriorityQueue(capacity int) *priorityQueue {
+	pq := make(priorityQueue, 0, capacity)
 	heap.Init(&pq)
 	return &pq
 }

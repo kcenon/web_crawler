@@ -2,6 +2,7 @@ package frontier
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -101,7 +102,7 @@ func TestDedup_CanonicalizationDedup(t *testing.T) {
 }
 
 func TestDedup_Standalone(t *testing.T) {
-	d := NewDeduplicator()
+	d := NewDeduplicator(0)
 
 	if d.IsSeen("http://example.com") {
 		t.Error("should not be seen initially")
@@ -122,6 +123,25 @@ func TestDedup_Standalone(t *testing.T) {
 	d.Reset()
 	if d.Size() != 0 {
 		t.Errorf("Size after Reset = %d, want 0", d.Size())
+	}
+}
+
+func TestMemoryFrontier_InitialCapacity(t *testing.T) {
+	const n = 1000
+	f := NewMemoryFrontier(Config{InitialCapacity: n})
+
+	for i := 0; i < n; i++ {
+		err := f.Add(&URLEntry{
+			URL:      fmt.Sprintf("http://example.com/page/%d", i),
+			Priority: PriorityNormal,
+		})
+		if err != nil {
+			t.Fatalf("Add[%d] unexpected error: %v", i, err)
+		}
+	}
+
+	if got := f.Size(); got != n {
+		t.Errorf("Size = %d, want %d", got, n)
 	}
 }
 

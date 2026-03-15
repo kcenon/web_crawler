@@ -43,7 +43,7 @@ func DefaultCacheConfig() CacheConfig {
 type cacheEntry struct {
 	key    string
 	resp   *Response
-	expiry time.Time    // zero means no expiry
+	expiry time.Time     // zero means no expiry
 	elem   *list.Element // back-pointer into the LRU list for O(1) moves
 }
 
@@ -60,7 +60,7 @@ type cacheEntry struct {
 type Cache struct {
 	cfg      CacheConfig
 	mu       sync.Mutex
-	lru      *list.List              // front = most recently used
+	lru      *list.List               // front = most recently used
 	entries  map[string]*list.Element // cacheKey → LRU list element
 	methods  map[string]bool
 	statuses map[int]bool

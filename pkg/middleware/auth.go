@@ -155,11 +155,13 @@ func (a *Auth) fetchToken(ctx context.Context) (*oauth2Token, error) {
 		return nil, fmt.Errorf("middleware.Auth: OAuth2 config is nil")
 	}
 
+	// Standard OAuth2 Client Credentials form fields (RFC 6749 §4.4).
+	// These are protocol parameter names, not credentials. // pragma: allowlist secret
 	data := url.Values{
-		"grant_type":    {"client_credentials"},
-		"client_id":     {cfg.ClientID},
-		"client_secret": {cfg.ClientSecret},
+		"grant_type": {"client_credentials"},
+		"client_id":  {cfg.ClientID},
 	}
+	data.Set("client_secret", cfg.ClientSecret) // pragma: allowlist secret
 	if len(cfg.Scopes) > 0 {
 		data.Set("scope", strings.Join(cfg.Scopes, " "))
 	}

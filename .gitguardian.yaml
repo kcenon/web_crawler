@@ -1,0 +1,7 @@
+version: 2
+
+# Exclude test files that use clearly non-production placeholder credentials.
+ignore-paths:
+  - "**/*_test.go"
+  - "**/testdata/**"
+  - "**/fixtures/**"

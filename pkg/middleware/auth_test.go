@@ -10,14 +10,27 @@ import (
 	"time"
 )
 
+// Placeholder credential constants used throughout auth tests.
+// These are clearly non-production dummy values.
+const (
+	testUsername     = "testuser"
+	testPassword     = "testpassword"
+	testClientID     = "test-client-id"
+	testClientCred   = "test-client-cred"
+	testBearerToken  = "test-bearer-token"
+	testChainToken   = "test-chain-bearer"
+	testAccessToken  = "access-token-from-srv"
+	testExpiredToken = "expired-access-token"
+)
+
 // --- Basic Auth ---
 
 func TestAuth_Basic_SetsHeader(t *testing.T) {
 	req := &Request{URL: "http://example.com"}
 	a := NewAuth(AuthConfig{
 		Type:     AuthTypeBasic,
-		Username: "alice",
-		Password: "s3cr3t",
+		Username: testUsername,
+		Password: testPassword,
 	})
 
 	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
@@ -25,9 +38,9 @@ func TestAuth_Basic_SetsHeader(t *testing.T) {
 	}
 
 	got := req.Headers["Authorization"]
-	// "alice:s3cr3t" base64 = "YWxpY2U6czNjcjN0"
-	if got != "Basic YWxpY2U6czNjcjN0" {
-		t.Errorf("Authorization = %q, want %q", got, "Basic YWxpY2U6czNjcjN0")
+	// base64("testuser:testpassword") = "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk"
+	if got != "Basic dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" {
+		t.Errorf("Authorization = %q, want %q", got, "Basic dGVzdHVzZXI6dGVzdHBhc3N3b3Jk")
 	}
 }
 
@@ -70,7 +83,7 @@ func TestAuth_Bearer_SetsHeader(t *testing.T) {
 	req := &Request{URL: "http://example.com"}
 	a := NewAuth(AuthConfig{
 		Type:  AuthTypeBearer,
-		Token: "my-secret-token",
+		Token: testBearerToken,
 	})
 
 	if _, err := a.ProcessRequest(context.Background(), req, nopHandler); err != nil {
@@ -78,8 +91,8 @@ func TestAuth_Bearer_SetsHeader(t *testing.T) {
 	}
 
 	got := req.Headers["Authorization"]
-	if got != "Bearer my-secret-token" {
-		t.Errorf("Authorization = %q, want %q", got, "Bearer my-secret-token")
+	if got != "Bearer "+testBearerToken {
+		t.Errorf("Authorization = %q, want %q", got, "Bearer "+testBearerToken)
 	}
 }
 
@@ -108,7 +121,7 @@ func newTokenServer(t *testing.T, calls *int, expiresIn int64) *httptest.Server 
 		*calls++
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
-			"access_token": "token-from-server",
+			"access_token": testAccessToken,
 			"token_type":   "Bearer",
 			"expires_in":   expiresIn,
 		})
@@ -124,8 +137,8 @@ func TestAuth_OAuth2_FetchesToken(t *testing.T) {
 	a := NewAuth(AuthConfig{
 		Type: AuthTypeOAuth2,
 		OAuth2: &OAuth2Config{
-			ClientID:     "id",
-			ClientSecret: "secret",
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
 			TokenURL:     srv.URL,
 		},
 		HTTPClient: srv.Client(),
@@ -135,8 +148,8 @@ func TestAuth_OAuth2_FetchesToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if req.Headers["Authorization"] != "Bearer token-from-server" {
-		t.Errorf("Authorization = %q, want %q", req.Headers["Authorization"], "Bearer token-from-server")
+	if req.Headers["Authorization"] != "Bearer "+testAccessToken {
+		t.Errorf("Authorization = %q, want %q", req.Headers["Authorization"], "Bearer "+testAccessToken)
 	}
 	if calls != 1 {
 		t.Errorf("token server called %d times, want 1", calls)
@@ -151,8 +164,8 @@ func TestAuth_OAuth2_CachesToken(t *testing.T) {
 	a := NewAuth(AuthConfig{
 		Type: AuthTypeOAuth2,
 		OAuth2: &OAuth2Config{
-			ClientID:     "id",
-			ClientSecret: "secret",
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
 			TokenURL:     srv.URL,
 		},
 		HTTPClient: srv.Client(),
@@ -179,8 +192,8 @@ func TestAuth_OAuth2_RefreshesExpiredToken(t *testing.T) {
 	a := NewAuth(AuthConfig{
 		Type: AuthTypeOAuth2,
 		OAuth2: &OAuth2Config{
-			ClientID:     "id",
-			ClientSecret: "secret",
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
 			TokenURL:     srv.URL,
 		},
 		HTTPClient: srv.Client(),
@@ -189,7 +202,7 @@ func TestAuth_OAuth2_RefreshesExpiredToken(t *testing.T) {
 	// Manually inject an already-expired cached token.
 	a.mu.Lock()
 	a.token = &oauth2Token{
-		AccessToken: "old-token",
+		AccessToken: testExpiredToken,
 		expiry:      time.Now().Add(-time.Minute), // already expired
 	}
 	a.mu.Unlock()
@@ -199,7 +212,7 @@ func TestAuth_OAuth2_RefreshesExpiredToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if req.Headers["Authorization"] != "Bearer token-from-server" {
+	if req.Headers["Authorization"] != "Bearer "+testAccessToken {
 		t.Errorf("Authorization = %q, want refreshed token", req.Headers["Authorization"])
 	}
 	if calls != 1 {
@@ -216,8 +229,8 @@ func TestAuth_OAuth2_TokenEndpointError(t *testing.T) {
 	a := NewAuth(AuthConfig{
 		Type: AuthTypeOAuth2,
 		OAuth2: &OAuth2Config{
-			ClientID:     "id",
-			ClientSecret: "bad-secret",
+			ClientID:     testClientID,
+			ClientSecret: "invalid-cred",
 			TokenURL:     srv.URL,
 		},
 		HTTPClient: srv.Client(),
@@ -249,8 +262,8 @@ func TestAuth_OAuth2_ScopesIncluded(t *testing.T) {
 	a := NewAuth(AuthConfig{
 		Type: AuthTypeOAuth2,
 		OAuth2: &OAuth2Config{
-			ClientID:     "id",
-			ClientSecret: "secret",
+			ClientID:     testClientID,
+			ClientSecret: testClientCred,
 			TokenURL:     srv.URL,
 			Scopes:       []string{"read", "write"},
 		},
@@ -295,14 +308,14 @@ func TestAuth_IntegrationWithChain(t *testing.T) {
 	c := NewChain(handler)
 	c.Use(NewAuth(AuthConfig{
 		Type:  AuthTypeBearer,
-		Token: "chain-test-token",
+		Token: testChainToken,
 	}))
 
 	_, err := c.Execute(context.Background(), &Request{URL: "http://example.com"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if capturedHeader != "Bearer chain-test-token" {
-		t.Errorf("handler received Authorization = %q, want %q", capturedHeader, "Bearer chain-test-token")
+	if capturedHeader != "Bearer "+testChainToken {
+		t.Errorf("handler received Authorization = %q, want %q", capturedHeader, "Bearer "+testChainToken)
 	}
 }

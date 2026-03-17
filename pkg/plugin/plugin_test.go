@@ -17,9 +17,9 @@ type stubStorage struct {
 	closed bool
 }
 
-func (s *stubStorage) Name() string                                    { return s.name }
-func (s *stubStorage) Init(map[string]any) error                       { return nil }
-func (s *stubStorage) Close() error                                    { s.closed = true; return nil }
+func (s *stubStorage) Name() string              { return s.name }
+func (s *stubStorage) Init(map[string]any) error { return nil }
+func (s *stubStorage) Close() error              { s.closed = true; return nil }
 func (s *stubStorage) Store(_ context.Context, items []storage.Item) error {
 	s.items = append(s.items, items...)
 	return nil

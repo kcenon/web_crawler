@@ -1,0 +1,37 @@
+# Plugin Configuration Example
+#
+# Copy this file to plugins.yaml and adjust settings.
+# Each plugin entry requires a "name" that matches a registered factory.
+# The "config" map is passed to Plugin.Init().
+
+plugins:
+  storage:
+    - name: file
+      config:
+        path: output/results.jsonl
+
+    # - name: csv
+    #   config:
+    #     path: output/results.csv
+
+    # - name: postgres
+    #   config:
+    #     dsn: postgres://user:pass@localhost:5432/crawler
+
+  parsers:
+    - name: html
+      # HTML parser extracts links automatically.
+      # Add extraction rules via programmatic configuration.
+
+  notifiers:
+    - name: webhook
+      config:
+        url: https://hooks.example.com/crawl-events
+        # headers:
+        #   Authorization: Bearer <token>
+
+  # exporters:
+  #   - name: s3
+  #     config:
+  #       bucket: my-crawl-data
+  #       region: us-east-1

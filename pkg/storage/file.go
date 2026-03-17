@@ -31,6 +31,9 @@ func NewFileStorage(cfg FileConfig) *FileStorage {
 	return &FileStorage{cfg: cfg}
 }
 
+// Name returns the plugin identifier for this storage backend.
+func (f *FileStorage) Name() string { return "file" }
+
 // Init opens the output file for append-mode writing.
 func (f *FileStorage) Init(config map[string]any) error {
 	if p, ok := config["path"].(string); ok && p != "" {

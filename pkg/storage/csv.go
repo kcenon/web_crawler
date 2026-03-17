@@ -39,6 +39,9 @@ func NewCSVStorage(cfg CSVConfig) *CSVStorage {
 	return &CSVStorage{cfg: cfg}
 }
 
+// Name returns the plugin identifier for this storage backend.
+func (c *CSVStorage) Name() string { return "csv" }
+
 // Init opens the output file and prepares the CSV writer.
 func (c *CSVStorage) Init(config map[string]any) error {
 	if p, ok := config["path"].(string); ok && p != "" {

@@ -463,3 +463,26 @@ func TestFlattenItem(t *testing.T) {
 		t.Errorf("expected data.nested.key='value', got %q", flat["data.nested.key"])
 	}
 }
+
+// --- Name() method tests ---
+
+func TestFileStorage_Name(t *testing.T) {
+	fs := NewFileStorage(FileConfig{Path: "/dev/null"})
+	if fs.Name() != "file" {
+		t.Errorf("Name() = %q, want %q", fs.Name(), "file")
+	}
+}
+
+func TestCSVStorage_Name(t *testing.T) {
+	cs := NewCSVStorage(CSVConfig{Path: "/dev/null"})
+	if cs.Name() != "csv" {
+		t.Errorf("Name() = %q, want %q", cs.Name(), "csv")
+	}
+}
+
+func TestPostgresPlugin_Name(t *testing.T) {
+	pg := NewPostgresPlugin(PostgresConfig{DSN: "postgres://localhost/test"})
+	if pg.Name() != "postgres" {
+		t.Errorf("Name() = %q, want %q", pg.Name(), "postgres")
+	}
+}

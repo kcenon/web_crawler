@@ -41,6 +41,9 @@ func NewPostgresPlugin(cfg PostgresConfig) *PostgresPlugin {
 	return &PostgresPlugin{cfg: cfg}
 }
 
+// Name returns the plugin identifier for this storage backend.
+func (p *PostgresPlugin) Name() string { return "postgres" }
+
 // Init connects to PostgreSQL and runs pending migrations.
 func (p *PostgresPlugin) Init(config map[string]any) error {
 	if dsn, ok := config["dsn"].(string); ok && dsn != "" {

@@ -28,14 +28,14 @@ type Config struct {
 
 // PluginsConfig groups plugin declarations by category.
 type PluginsConfig struct {
-	Storage   []PluginEntry `yaml:"storage,omitempty"`
-	Parsers   []PluginEntry `yaml:"parsers,omitempty"`
-	Notifiers []PluginEntry `yaml:"notifiers,omitempty"`
-	Exporters []PluginEntry `yaml:"exporters,omitempty"`
+	Storage   []Entry `yaml:"storage,omitempty"`
+	Parsers   []Entry `yaml:"parsers,omitempty"`
+	Notifiers []Entry `yaml:"notifiers,omitempty"`
+	Exporters []Entry `yaml:"exporters,omitempty"`
 }
 
-// PluginEntry declares a single plugin instance.
-type PluginEntry struct {
+// Entry declares a single plugin instance.
+type Entry struct {
 	// Name identifies which plugin to instantiate (must match a registered factory).
 	Name string `yaml:"name"`
 

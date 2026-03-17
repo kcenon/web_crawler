@@ -75,7 +75,7 @@ func TestLoadConfig_Invalid(t *testing.T) {
 func TestLoadConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "plugins.yaml")
-	if err := os.WriteFile(path, []byte(testYAML), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(testYAML), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -98,7 +98,7 @@ func TestLoadConfigFile_NotFound(t *testing.T) {
 // --- Loader tests ----------------------------------------------------
 
 // fakeStorage is a test storage plugin.
-type fakeStorage struct{ path string }
+type fakeStorage struct{}
 
 func (s *fakeStorage) Name() string                                    { return "file" }
 func (s *fakeStorage) Init(cfg map[string]any) error                   { return nil }

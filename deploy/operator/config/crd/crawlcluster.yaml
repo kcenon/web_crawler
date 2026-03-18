@@ -1,0 +1,108 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crawlclusters.crawler.kcenon.com
+spec:
+  group: crawler.kcenon.com
+  names:
+    kind: CrawlCluster
+    listKind: CrawlClusterList
+    plural: crawlclusters
+    singular: crawlcluster
+    shortNames:
+      - cc
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                kafka:
+                  type: object
+                  required:
+                    - brokers
+                  properties:
+                    brokers:
+                      type: array
+                      items:
+                        type: string
+                    taskTopic:
+                      type: string
+                      default: "crawl-tasks"
+                    dlqTopic:
+                      type: string
+                      default: "crawl-tasks.dlq"
+                    controlTopic:
+                      type: string
+                      default: "crawl-control"
+                defaultWorkerImage:
+                  type: string
+                  default: "ghcr.io/kcenon/web-crawler:latest"
+                autoscaling:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    minWorkers:
+                      type: integer
+                      default: 2
+                    maxWorkers:
+                      type: integer
+                      default: 20
+                    targetQueueDepth:
+                      type: integer
+                      default: 1000
+                      description: Target queue depth per worker for autoscaling
+                monitoring:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+                    metricsPort:
+                      type: integer
+                      default: 9090
+                    serviceMonitor:
+                      type: boolean
+                      default: false
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Initializing
+                    - Ready
+                    - Degraded
+                    - Error
+                activeJobs:
+                  type: integer
+                totalWorkers:
+                  type: integer
+                kafkaConnected:
+                  type: boolean
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Jobs
+          type: integer
+          jsonPath: .status.activeJobs
+        - name: Workers
+          type: integer
+          jsonPath: .status.totalWorkers
+        - name: Kafka
+          type: boolean
+          jsonPath: .status.kafkaConnected
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

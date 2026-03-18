@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crawler-operator
+rules:
+  # CrawlJob and CrawlCluster CRDs
+  - apiGroups: ["crawler.kcenon.com"]
+    resources: ["crawljobs", "crawljobs/status", "crawlclusters", "crawlclusters/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Worker Deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Worker Pods
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Events
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # HPA for autoscaling
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # ServiceMonitor for Prometheus
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

@@ -19,6 +19,10 @@ type LogConfig struct {
 
 	// AddSource includes source file information in log entries.
 	AddSource bool
+
+	// Sanitize enables automatic redaction of sensitive data (credentials,
+	// tokens, API keys) in log output. Recommended for production use.
+	Sanitize bool
 }
 
 // NewLogger creates a structured slog.Logger from the given configuration.
@@ -37,6 +41,10 @@ func NewLogger(cfg LogConfig) *slog.Logger {
 		handler = slog.NewTextHandler(cfg.Output, opts)
 	} else {
 		handler = slog.NewJSONHandler(cfg.Output, opts)
+	}
+
+	if cfg.Sanitize {
+		handler = NewSanitizingHandler(handler)
 	}
 
 	return slog.New(handler)

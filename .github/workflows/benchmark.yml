@@ -30,6 +30,8 @@ jobs:
 
       - name: Install benchstat
         run: go install golang.org/x/perf/cmd/benchstat@latest
+        env:
+          GOTOOLCHAIN: auto
 
       - name: Restore baseline benchmark results
         if: github.event_name == 'pull_request'

@@ -1,6 +1,6 @@
 module github.com/kcenon/web_crawler
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -17,7 +17,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/tidwall/gjson v1.18.0
 	golang.org/x/net v0.50.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11

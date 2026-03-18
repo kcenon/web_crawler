@@ -1,0 +1,42 @@
+replicaCount: 3
+
+image:
+  repository: ghcr.io/kcenon/web-crawler
+  pullPolicy: IfNotPresent
+  tag: ""  # Defaults to Chart.appVersion
+
+kafka:
+  brokers:
+    - kafka:9092
+  taskTopic: crawl-tasks
+  dlqTopic: crawl-tasks.dlq
+  controlTopic: crawl-control
+  consumerGroup: crawler-workers
+
+worker:
+  concurrency: 4
+  maxRetries: 3
+  retryBackoffSeconds: 5
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+metrics:
+  enabled: true
+  port: 9090
+  path: /metrics
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70

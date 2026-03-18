@@ -1,0 +1,10 @@
+apiVersion: v2
+name: web-crawler
+description: Distributed web crawler with Kafka-based task distribution
+type: application
+version: 0.1.0
+appVersion: "2.0.0"
+keywords:
+  - web-crawler
+  - distributed
+  - kafka

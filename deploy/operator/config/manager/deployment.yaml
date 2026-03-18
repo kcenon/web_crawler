@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawler-operator
+  labels:
+    app.kubernetes.io/name: crawler-operator
+    app.kubernetes.io/component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: crawler-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: crawler-operator
+        app.kubernetes.io/component: controller
+    spec:
+      serviceAccountName: crawler-operator
+      containers:
+        - name: operator
+          image: ghcr.io/kcenon/web-crawler-operator:latest
+          args:
+            - operator
+            - --leader-elect
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10

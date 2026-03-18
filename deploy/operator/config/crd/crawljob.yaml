@@ -1,0 +1,152 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crawljobs.crawler.kcenon.com
+spec:
+  group: crawler.kcenon.com
+  names:
+    kind: CrawlJob
+    listKind: CrawlJobList
+    plural: crawljobs
+    singular: crawljob
+    shortNames:
+      - cj
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - seedURLs
+              properties:
+                seedURLs:
+                  type: array
+                  items:
+                    type: string
+                  description: Starting URLs for the crawl
+                maxDepth:
+                  type: integer
+                  default: 3
+                  description: Maximum crawl depth from seed URLs
+                workers:
+                  type: integer
+                  default: 3
+                  minimum: 1
+                  maximum: 100
+                  description: Number of worker pods
+                concurrencyPerWorker:
+                  type: integer
+                  default: 4
+                  minimum: 1
+                  description: Concurrent requests per worker
+                maxRetries:
+                  type: integer
+                  default: 3
+                  description: Max retry attempts per failed URL
+                image:
+                  type: string
+                  default: "ghcr.io/kcenon/web-crawler:latest"
+                  description: Worker container image
+                resources:
+                  type: object
+                  properties:
+                    limits:
+                      type: object
+                      properties:
+                        cpu:
+                          type: string
+                          default: "500m"
+                        memory:
+                          type: string
+                          default: "512Mi"
+                    requests:
+                      type: object
+                      properties:
+                        cpu:
+                          type: string
+                          default: "100m"
+                        memory:
+                          type: string
+                          default: "128Mi"
+                kafka:
+                  type: object
+                  properties:
+                    brokers:
+                      type: array
+                      items:
+                        type: string
+                      default:
+                        - "kafka:9092"
+                    taskTopic:
+                      type: string
+                      default: "crawl-tasks"
+                schedule:
+                  type: string
+                  description: Cron schedule for recurring crawls (optional)
+                suspend:
+                  type: boolean
+                  default: false
+                  description: Suspend the crawl job
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Running
+                    - Paused
+                    - Completed
+                    - Failed
+                activeWorkers:
+                  type: integer
+                urlsProcessed:
+                  type: integer
+                urlsFailed:
+                  type: integer
+                startTime:
+                  type: string
+                  format: date-time
+                completionTime:
+                  type: string
+                  format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Workers
+          type: integer
+          jsonPath: .spec.workers
+        - name: Processed
+          type: integer
+          jsonPath: .status.urlsProcessed
+        - name: Failed
+          type: integer
+          jsonPath: .status.urlsFailed
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

@@ -1,0 +1,73 @@
+groups:
+  - name: crawler.rules
+    rules:
+      # Error rate spike: >10% error rate over 5 minutes
+      - alert: CrawlerHighErrorRate
+        expr: |
+          sum(rate(crawler_errors_total[5m]))
+          / sum(rate(crawler_requests_total[5m]))
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Crawler error rate exceeds 10%"
+          description: >
+            Error rate is {{ $value | humanizePercentage }} over the last 5 minutes.
+            Check crawler logs for details.
+
+      # Throughput drop: >50% below 15-minute baseline
+      - alert: CrawlerThroughputDrop
+        expr: |
+          sum(rate(crawler_requests_total[5m]))
+          < sum(rate(crawler_requests_total[15m])) * 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Crawler throughput dropped by >50%"
+          description: >
+            Current throughput {{ $value | humanize }} req/s is less than
+            half the 15-minute baseline. Possible network issue or target
+            site blocking.
+
+      # Queue backlog growth
+      - alert: CrawlerQueueBacklog
+        expr: crawler_urls_queued > 100000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Crawl queue depth exceeds 100K URLs"
+          description: >
+            Queue depth is {{ $value }} URLs. Consider scaling up workers
+            or reducing crawl scope.
+
+      # No requests for 10 minutes (crawler may be stuck)
+      - alert: CrawlerStalled
+        expr: |
+          sum(rate(crawler_requests_total[10m])) == 0
+          and crawler_active_requests > 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Crawler appears stalled"
+          description: >
+            No requests completed in 10 minutes but active requests
+            exist. The crawler may be stuck or target is unresponsive.
+
+      # High request latency
+      - alert: CrawlerHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(crawler_request_duration_seconds_bucket[5m])) by (le)
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Crawler p95 latency exceeds 10 seconds"
+          description: >
+            95th percentile request latency is {{ $value | humanizeDuration }}.
+            Target sites may be slow or rate limiting.

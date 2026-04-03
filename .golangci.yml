@@ -13,13 +13,12 @@ linters:
     - misspell
     - revive
     - gosec
-
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        arguments:
-          - "checkPrivateReceivers"
+  settings:
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - "checkPrivateReceivers"
 
 run:
   timeout: 5m

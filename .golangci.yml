@@ -8,8 +8,6 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - misspell
     - revive
     - gosec
@@ -19,6 +17,11 @@ linters:
         - name: exported
           arguments:
             - "checkPrivateReceivers"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 run:
   timeout: 5m

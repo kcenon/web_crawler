@@ -10,11 +10,23 @@ linters:
     - revive
     - gosec
   settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (io.Closer).Close
+        - (*os.File).Close
     revive:
       rules:
         - name: exported
           arguments:
             - "checkPrivateReceivers"
+  exclusions:
+    paths:
+      - examples
+      - ".*_test\\.go"
+      - internal/testutil
 
 formatters:
   enable:

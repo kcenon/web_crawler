@@ -102,7 +102,7 @@ crawler server start --port 50051
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.26+
 - [golangci-lint](https://golangci-lint.run/) (for linting)
 
 ### Build Commands
@@ -138,7 +138,7 @@ python/            Python SDK bindings
 
 ## Requirements
 
-- Go 1.25+
+- Go 1.26+
 - Python 3.9+ (for Python bindings)
 - Chrome/Chromium (for JavaScript rendering)
 

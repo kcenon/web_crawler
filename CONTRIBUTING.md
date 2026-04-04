@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This guide covers the development s
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.26+
 - Python 3.10+ (for Python SDK)
 - [buf](https://buf.build/) (for Protocol Buffers)
 - [golangci-lint](https://golangci-lint.run/) v1.64+

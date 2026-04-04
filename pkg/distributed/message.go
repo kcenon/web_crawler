@@ -76,6 +76,7 @@ type ControlMessage struct {
 // ControlType enumerates the control commands.
 type ControlType string
 
+// ControlType values.
 const (
 	ControlPause  ControlType = "pause"
 	ControlResume ControlType = "resume"

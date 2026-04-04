@@ -15,6 +15,7 @@ import (
 // AuthType enumerates the supported authentication schemes.
 type AuthType string
 
+// AuthType values.
 const (
 	AuthTypeBasic  AuthType = "basic"  // HTTP Basic Authentication (RFC 7617).
 	AuthTypeBearer AuthType = "bearer" // Bearer token (RFC 6750).

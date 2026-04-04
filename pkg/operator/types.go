@@ -33,6 +33,7 @@ type CrawlJobStatus struct {
 // JobPhase represents the lifecycle phase of a CrawlJob.
 type JobPhase string
 
+// JobPhase values.
 const (
 	JobPhasePending   JobPhase = "Pending"
 	JobPhaseRunning   JobPhase = "Running"

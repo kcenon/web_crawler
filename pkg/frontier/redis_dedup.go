@@ -32,7 +32,7 @@ func NewRedisDeduplicator(cfg RedisConfig) (*RedisDeduplicator, error) {
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		rdb.Close()
+		_ = rdb.Close()
 		return nil, fmt.Errorf("redis deduplicator: ping %s: %w", cfg.Addr, err)
 	}
 

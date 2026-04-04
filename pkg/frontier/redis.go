@@ -68,7 +68,7 @@ func NewRedisFrontier(cfg RedisConfig) (*RedisFrontier, error) {
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		rdb.Close()
+		_ = rdb.Close()
 		return nil, fmt.Errorf("redis frontier: ping %s: %w", cfg.Addr, err)
 	}
 

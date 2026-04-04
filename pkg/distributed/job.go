@@ -13,6 +13,7 @@ import (
 // JobState represents the lifecycle state of a crawl job.
 type JobState string
 
+// JobState values.
 const (
 	JobCreated   JobState = "created"
 	JobRunning   JobState = "running"
@@ -255,7 +256,7 @@ func (m *JobManager) controlTransition(ctx context.Context, jobID string, target
 		Addr:  kafka.TCP(m.brokers...),
 		Topic: m.controlTopic,
 	}
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	if err := w.WriteMessages(ctx, kafka.Message{
 		Key:   []byte(jobID),

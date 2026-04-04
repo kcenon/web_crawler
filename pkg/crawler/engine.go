@@ -135,7 +135,7 @@ func (e *Engine) Wait() error {
 
 cleanup:
 	e.workerWg.Wait()
-	e.httpClient.Close()
+	_ = e.httpClient.Close()
 	return result
 }
 

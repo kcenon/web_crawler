@@ -5,6 +5,7 @@ import "errors"
 // ExtractionType identifies the extraction strategy.
 type ExtractionType int
 
+// ExtractionType values.
 const (
 	TypeCSS   ExtractionType = iota // CSS selector (GoQuery)
 	TypeXPath                       // XPath expression
@@ -31,6 +32,7 @@ type Extractor interface {
 	Extract(content []byte, rules []ExtractionRule) ([]ExtractionResult, error)
 }
 
+// Sentinel errors for extraction failures.
 var (
 	ErrEmptySelector = errors.New("extractor: empty selector")
 	ErrInvalidType   = errors.New("extractor: invalid extraction type")

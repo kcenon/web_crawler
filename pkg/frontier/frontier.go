@@ -9,6 +9,7 @@ import (
 // Lower values indicate higher priority.
 type Priority int
 
+// Priority levels for URL scheduling.
 const (
 	PriorityCritical Priority = 0
 	PriorityHigh     Priority = 1

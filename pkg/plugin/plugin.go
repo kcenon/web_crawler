@@ -67,6 +67,7 @@ type NotifierPlugin interface {
 // EventType identifies the kind of crawl event.
 type EventType string
 
+// EventType values.
 const (
 	EventStarted   EventType = "started"
 	EventCompleted EventType = "completed"

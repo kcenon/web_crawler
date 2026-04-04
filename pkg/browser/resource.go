@@ -91,8 +91,12 @@ func (f ResourceFilter) apply() []chromedp.Action {
 	if len(patterns) == 0 {
 		return nil
 	}
+	blocked := make([]*network.BlockPattern, len(patterns))
+	for i, p := range patterns {
+		blocked[i] = &network.BlockPattern{URLPattern: p, Block: true}
+	}
 	return []chromedp.Action{
 		network.Enable(),
-		network.SetBlockedURLs(patterns),
+		network.SetBlockedURLs().WithURLPatterns(blocked),
 	}
 }

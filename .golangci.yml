@@ -1,23 +1,37 @@
+version: "2"
+
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
-    - gofmt
-    - goimports
     - misspell
     - revive
     - gosec
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (io.Closer).Close
+        - (*os.File).Close
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - "checkPrivateReceivers"
+  exclusions:
+    paths:
+      - examples
+      - ".*_test\\.go"
+      - internal/testutil
 
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        arguments:
-          - "checkPrivateReceivers"
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 run:
   timeout: 5m

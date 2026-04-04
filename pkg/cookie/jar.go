@@ -134,7 +134,7 @@ func (j *jar) Save(path string) error {
 // Load reads cookies from a JSON file and replays them into the jar.
 // Existing cookies are cleared before loading.
 func (j *jar) Load(path string) error {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) //nolint:gosec // path is caller-provided cookie file
 	if err != nil {
 		return fmt.Errorf("read cookie file: %w", err)
 	}

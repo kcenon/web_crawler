@@ -114,7 +114,7 @@ func (s *Server) Start(ctx context.Context) error {
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
-		s.Stop(context.Background()) //nolint:errcheck // best-effort on context cancel
+		s.Stop(context.Background()) //nolint:errcheck,gosec // best-effort on context cancel
 		return ctx.Err()
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Sentinel errors for frontier operations.
 var (
 	ErrClosed    = errors.New("frontier: closed")
 	ErrFiltered  = errors.New("frontier: URL filtered")

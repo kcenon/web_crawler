@@ -13,6 +13,7 @@ import (
 // Codes are stable across versions for Python SDK mapping.
 type ErrorCode int
 
+// ErrorCode values.
 const (
 	CodeUnknown    ErrorCode = 0
 	CodeNetwork    ErrorCode = 1

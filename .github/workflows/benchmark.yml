@@ -76,7 +76,7 @@ jobs:
 
       - name: Post benchmark results as PR comment
         if: github.event_name == 'pull_request' && steps.cache-restore.outputs.cache-hit == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const result = `${{ steps.benchstat.outputs.result }}`;

@@ -241,7 +241,20 @@ func cookieToEntry(u *url.URL, c *http.Cookie) entry {
 
 // entryToCookie converts a persistence entry back to an http.Cookie.
 func entryToCookie(e entry) *http.Cookie {
-	c := &http.Cookie{
+	var sameSite http.SameSite
+	switch e.SameSite {
+	case "Strict":
+		sameSite = http.SameSiteStrictMode
+	case "Lax":
+		sameSite = http.SameSiteLaxMode
+	case "None":
+		sameSite = http.SameSiteNoneMode
+	}
+
+	// G124: security attributes (Secure, HttpOnly, SameSite) are restored
+	// from the persisted entry rather than hard-coded, so the static check
+	// cannot verify them; they reflect the original server-issued cookie.
+	return &http.Cookie{ //nolint:gosec // G124: attributes restored from persisted entry
 		Name:     e.Name,
 		Value:    e.Value,
 		Domain:   e.Domain,
@@ -249,18 +262,8 @@ func entryToCookie(e entry) *http.Cookie {
 		Expires:  e.Expires,
 		Secure:   e.Secure,
 		HttpOnly: e.HttpOnly,
+		SameSite: sameSite,
 	}
-
-	switch e.SameSite {
-	case "Strict":
-		c.SameSite = http.SameSiteStrictMode
-	case "Lax":
-		c.SameSite = http.SameSiteLaxMode
-	case "None":
-		c.SameSite = http.SameSiteNoneMode
-	}
-
-	return c
 }
 
 // removeCookieEntry removes a cookie entry by identity (domain+path+name).

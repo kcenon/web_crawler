@@ -1,3 +1,5 @@
+> Status: archived 2026-09. No further maintenance; kept for reference.
+
 # Web Crawler SDK
 
 A high-performance web crawling SDK with Go core engine and Python bindings.
